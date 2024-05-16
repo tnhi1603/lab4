@@ -43,6 +43,12 @@
             padding: 8px;
             text-align: left;
         }
+        .online {
+            color: green;
+        }
+        .offline {
+            color: red;
+        }
         .container {
             display: flex;
             flex-wrap: wrap;
@@ -63,6 +69,19 @@
             margin: 0;
             color: #333;
         }
+        button {
+            background-color: rgb(176, 176, 176);
+            color: black;
+            border: 1px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 10px;
+        }
+        button:active {
+            background-color: rgb(158, 241, 158);
+        }
     </style>
 </head>
 <body>
@@ -79,8 +98,8 @@
         const devices = [
             {
                 name: 'Wemos D1',
-                channelID: '2550110',
-                readAPIKey: '1X8IPD9GFH5XV98I'
+                channelID: '2548945',
+                readAPIKey: 'EFU9QQ9QK6LNJKLO'
             }
         ];
 
@@ -92,7 +111,7 @@
                     const lastUpdated = new Date(lastEntry.created_at);
                     const currentTime = new Date();
                     const timeDiff = (currentTime - lastUpdated) / 1000; // time difference in seconds
-                    const status = timeDiff < 6 ? 'Online' : 'Offline'; // 10 minutes threshold
+                    const status = timeDiff < 6 ? 'Online' : 'Offline'; 
                     updateDeviceStatus(device.name, status);
                 })
                 .catch(error => {
@@ -130,6 +149,7 @@
         initializeDashboard();
     </script>
     </div>
+
     <!-- Main Screen Section -->
     <div id="mainScreen" class="section">
         <h2>Main Screen</h2>
@@ -137,9 +157,12 @@
             Loading sensor data...
         </div>
         <div class="led-controls">
-            <h3>LED Controls</h3>
-            <button onclick="controlLED('on')">Turn LED ON</button>
-            <button onclick="controlLED('off')">Turn LED OFF</button>
+            <h3>LED 1 Control</h3>
+            <button onclick="controlLED(1, 'on')">Turn LED 1 ON</button>
+            <button onclick="controlLED(1, 'off')">Turn LED 1 OFF</button>
+            <h3>LED 2 Control</h3>
+            <button onclick="controlLED(2, 'on')">Turn LED 2 ON</button>
+            <button onclick="controlLED(2, 'off')">Turn LED 2 OFF</button>
         </div>
     </div>
 
@@ -173,6 +196,7 @@
     <script>
         const channelID = '2548945';
         const readAPIKey = 'EFU9QQ9QK6LNJKLO';
+        const writeAPIKey = '2AUH373HEDETRL9K';
         let sensorData = [];
 
         function fetchData() {
@@ -199,9 +223,23 @@
             document.getElementById('sensorData').innerHTML = output;
         }
 
-        function controlLED(state) {
-            alert(`LED turned ${state}`);
-            // Add code to send LED control commands to the device
+        function controlLED(ledNumber, state) {
+            const fieldNumber = ledNumber === 1 ? 'field4' : 'field5';
+            const value = state === 'on' ? 1 : 0;
+            const url = `https://api.thingspeak.com/update?api_key=${writeAPIKey}&${fieldNumber}=${value}`;
+
+            fetch(url)
+                .then(response => {
+                    if (response.ok) {
+                        alert(`LED ${ledNumber} turned ${state.toUpperCase()}`);
+                    } else {
+                        alert(`Failed to update LED ${ledNumber} state.`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error controlling LED:', error);
+                    alert(`Error controlling LED ${ledNumber}. Please try again.`);
+                });
         }
 
         function updateCharts() {
@@ -300,7 +338,7 @@
         }
 
         fetchData();
-        setInterval(fetchData, 6000);
+        setInterval(fetchData, 5000); // Update every 5 seconds
     </script>
 </body>
 </html>
