@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .header {
+            background-color: #333;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 20px;
+        }
+        .device-card {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+        }
+        .device-card h3 {
+            margin: 0;
+            color: #333;
+        }
+        .status {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+        .online {
+            color: green;
+        }
+        .offline {
+            color: red;
+        }
+        .sidebar {
+            height: 100%;
+            width: 200px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #333;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            padding: 15px 25px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #fff;
+            display: block;
+        }
+        .sidebar a:hover {
+            background-color: #575757;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="index.html">Màn hình chính</a>
+        <a href="chart.html">Biểu đồ</a>
+        <a href="logs.html">Logs</a>
+        <a href="led.html">Điều khiển LED</a>
+    </div>
+    <div class="header">
+        <h1>Device Dashboard</h1>
+    </div>
+    <div class="container" id="deviceContainer">
+        <!-- Device cards will be added here dynamically -->
+    </div>
+
+    <script>
+        const devices = [
+            {
+                name: 'Wemos D1',
+                channelID: '2550110',
+                readAPIKey: '1X8IPD9GFH5XV98I'
+            }
+        ];
+
+        function fetchData(device) {
+            fetch(`https://api.thingspeak.com/channels/${device.channelID}/feeds.json?api_key=${device.readAPIKey}&results=1`)
+                .then(response => response.json())
+                .then(data => {
+                    const lastEntry = data.feeds[0];
+                    const lastUpdated = new Date(lastEntry.created_at);
+                    const currentTime = new Date();
+                    const timeDiff = (currentTime - lastUpdated) / 1000; // time difference in seconds
+                    const status = timeDiff < 6 ? 'Online' : 'Offline'; // 10 minutes threshold
+                    updateDeviceStatus(device.name, status);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    updateDeviceStatus(device.name, 'Offline');
+                });
+        }
+
+        function updateDeviceStatus(deviceName, status) {
+            const deviceCard = document.getElementById(deviceName.replace(/\s+/g, ''));
+            deviceCard.querySelector('.status').textContent = status;
+            deviceCard.querySelector('.status').className = `status ${status.toLowerCase()}`;
+        }
+
+        function createDeviceCard(device) {
+            const container = document.getElementById('deviceContainer');
+            const card = document.createElement('div');
+            card.className = 'device-card';
+            card.id = device.name.replace(/\s+/g, '');
+            card.innerHTML = `
+                <h3>${device.name}</h3>
+                <p class="status">Checking...</p>
+            `;
+            container.appendChild(card);
+        }
+
+        function initializeDashboard() {
+            devices.forEach(device => {
+                createDeviceCard(device);
+                fetchData(device);
+                setInterval(() => fetchData(device), 6000); // Update every 6 seconds
+            });
+        }
+
+        initializeDashboard();
+    </script>
+</body>
+</html>
